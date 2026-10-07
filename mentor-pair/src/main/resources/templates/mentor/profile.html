@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('导师资料 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5" style="max-width: 760px;">
+    <h5 class="mb-3">导师资料（名额决定可接收的学员上限）</h5>
+    <div class="card p-4">
+        <form id="f" onsubmit="return false;">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">职称</label><input id="jobTitle" class="form-control"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">院系</label><input id="department" class="form-control"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">研究方向</label><input id="researchArea" class="form-control"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">可带学员名额</label><input id="maxQuota" class="form-control" type="number" min="0" max="999"></div>
+            </div>
+            <div class="mb-3"><label class="form-label">个人简介</label><textarea id="intro" class="form-control" rows="4"></textarea></div>
+            <button class="btn btn-primary" onclick="save()">保存资料</button>
+        </form>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+api('/mentor/api/profile', 'GET', {}, function (d) {
+    if (!d) return;
+    $('#jobTitle').val(d.jobTitle || '');
+    $('#department').val(d.department || '');
+    $('#researchArea').val(d.researchArea || '');
+    $('#maxQuota').val(d.maxQuota == null ? 0 : d.maxQuota);
+    $('#intro').val(d.intro || '');
+});
+
+function save() {
+    api('/mentor/api/profile', 'POST', {
+        jobTitle: $('#jobTitle').val(), department: $('#department').val(),
+        researchArea: $('#researchArea').val(), maxQuota: $('#maxQuota').val(), intro: $('#intro').val()
+    }, function () { alert('资料已保存'); });
+}
+</script>
+</body>
+</html>

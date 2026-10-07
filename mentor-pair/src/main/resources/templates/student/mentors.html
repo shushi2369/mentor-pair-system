@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('选择导师 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">选择导师</h5>
+    <div id="statusBanner" class="alert py-2 d-none"></div>
+    <div id="winBanner" class="alert py-2 d-none"></div>
+    <div class="card p-3 mb-3">
+        <div class="row g-2">
+            <div class="col-md-4"><input id="qKw" class="form-control" placeholder="姓名 / 院系 / 研究方向"></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="load(1)">查询</button></div>
+        </div>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>姓名</th><th>职称</th><th>院系</th><th>研究方向</th><th>已收 / 名额</th><th>简介</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">提交双选申请</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">申请导师</label><input id="apMentorName" class="form-control" disabled></div>
+                <div class="mb-3">
+                    <label class="form-label">意向项目（可选）</label>
+                    <select id="apProject" class="form-select"><option value="">不指定项目</option></select>
+                </div>
+                <div class="alert alert-warning py-2 small mb-0">每人同时只能有一条待处理/已接受的申请；请确认信息后提交。</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitApply()">确认提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1, rows = [], applyMentorId = null, windowOpen = true, windowMsg = "";
+
+function loadMyStatus() {
+    api('/student/api/selections', 'GET', {size: 1}, function (d) {
+        var s = d.records[0];
+        if (!s) return;
+        var b = $('#statusBanner').removeClass('d-none alert-warning alert-success alert-danger');
+        if (s.status === 0) {
+            b.addClass('alert-warning').text('你的双选申请正在等待 ' + (s.mentorName || '导师') + ' 处理，请耐心等待');
+        } else if (s.status === 1) {
+            b.addClass('alert-success').text('双选成功！' + (s.mentorName || '导师') + ' 已接受你，可前往「我的提交」上传项目文件');
+        } else {
+            b.addClass('alert-danger').text('申请被拒绝' + (s.remark ? '：' + s.remark : '') + '，可在下方重新选择导师申请');
+        }
+    });
+}
+
+function loadWindow() {
+    api('/student/api/window', 'GET', {}, function (w) {
+        if (!w.enabled) { windowOpen = true; return; }
+        windowOpen = w.open;
+        windowMsg = w.message || "";
+        var b = $('#winBanner').removeClass('d-none alert-info alert-danger');
+        if (w.open) {
+            b.addClass('alert-info');
+            if (w.message) { b.text(w.message); } else { b.addClass('d-none'); }
+            load(curPage); // 重新渲染，让"已满/可申请"与横幅状态一致
+        } else {
+            b.addClass('alert-danger').text(w.message);
+            load(curPage); // 重渲染后申请按钮按最新状态禁用
+        }
+    });
+}
+
+function load(p) {
+    curPage = p || 1;
+    api('/student/api/mentors', 'GET', {page: curPage, size: SIZE, kw: $('#qKw').val()}, function (d) {
+        rows = d.records;
+        var html = '';
+        rows.forEach(function (m) {
+            var applyBtn = windowOpen
+                ? '<button class="btn btn-sm btn-primary" onclick="openApply(' + m.mentorId + ')">申请</button>'
+                : '<button class="btn btn-sm btn-secondary" disabled title="' + esc(windowMsg) + '">申请</button>';
+            html += '<tr>'
+                + '<td>' + esc(m.mentorName) + '</td>'
+                + '<td>' + esc(m.jobTitle || '-') + '</td>'
+                + '<td>' + esc(m.department || '-') + '</td>'
+                + '<td>' + esc(m.researchArea || '-') + '</td>'
+                + '<td>' + m.acceptedCount + ' / ' + m.maxQuota + (m.remaining > 0 ? ' <span class="badge bg-success">可申请</span>' : ' <span class="badge bg-secondary">已满</span>') + '</td>'
+                + '<td class="small text-secondary">' + esc(m.intro || '-') + '</td>'
+                + '<td>' + applyBtn + '</td>'
+                + '</tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="7" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+function openApply(mentorId) {
+    if (!windowOpen) {
+        alert(windowMsg || "双选申请通道未开放");
+        return;
+    }
+    var m = rows.filter(function (r) { return r.mentorId === mentorId; })[0] || {};
+    applyMentorId = mentorId;
+    $('#apMentorName').val(m.mentorName || '');
+    $('#apProject').html('<option value="">不指定项目</option>');
+    api('/student/api/projects', 'GET', {mentorId: mentorId, size: 100}, function (d) {
+        var html = '<option value="">不指定项目</option>';
+        d.records.forEach(function (p) {
+            html += '<option value="' + p.id + '">' + esc(p.title) + '</option>';
+        });
+        $('#apProject').html(html);
+    });
+    new bootstrap.Modal(document.getElementById('applyModal')).show();
+}
+
+function submitApply() {
+    if (!confirm('确认向该导师提交双选申请？')) return;
+    var data = {mentorId: applyMentorId};
+    var pid = $('#apProject').val();
+    if (pid) data.projectId = pid;
+    api('/student/api/selections', 'POST', data, function () {
+        bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
+        alert('申请已提交，请等待导师处理');
+        load(curPage);
+    });
+}
+
+loadMyStatus();
+loadWindow();
+load(1);
+</script>
+</body>
+</html>

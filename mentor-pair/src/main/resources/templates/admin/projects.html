@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('项目信息 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">项目信息管理</h5>
+    <div class="card p-3 mb-3">
+        <div class="row g-2">
+            <div class="col-md-4"><input id="qKw" class="form-control" placeholder="项目名称 / 导师姓名"></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="load(1)">查询</button></div>
+        </div>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>ID</th><th>项目名称</th><th>导师</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1, rows = [];
+
+function load(p) {
+    curPage = p || 1;
+    api('/admin/api/projects', 'GET', {page: curPage, size: SIZE, kw: $('#qKw').val()}, function (d) {
+        rows = d.records;
+        var html = '';
+        rows.forEach(function (p) {
+            html += '<tr>'
+                + '<td>' + p.id + '</td>'
+                + '<td>' + esc(p.title) + '<div class="text-secondary small">' + esc(p.description || '') + '</div></td>'
+                + '<td>' + esc(p.mentorName || '-') + '</td>'
+                + '<td>' + (p.status === 1 ? '<span class="badge bg-success">开放</span>' : '<span class="badge bg-secondary">下架</span>') + '</td>'
+                + '<td>' + (p.createTime || '-') + '</td>'
+                + '<td>'
+                + (p.status === 1 ? '<button class="btn btn-sm btn-outline-warning me-1" onclick="offline(' + p.id + ')">下架</button>' : '')
+                + '<button class="btn btn-sm btn-outline-danger" onclick="del(' + p.id + ')">删除</button>'
+                + '</td></tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="6" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+function offline(id) {
+    if (!confirm('确认下架该项目？')) return;
+    api('/admin/api/projects/' + id + '/offline', 'POST', {}, function () { load(curPage); });
+}
+
+function del(id) {
+    if (!confirm('确认删除该项目？删除后相关申请将不再显示项目名称。')) return;
+    api('/admin/api/projects/' + id, 'DELETE', {}, function () { load(curPage); });
+}
+
+load(1);
+</script>
+</body>
+</html>

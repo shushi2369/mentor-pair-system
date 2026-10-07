@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('项目信息 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">项目信息（导师发布的开放项目）</h5>
+    <div class="card p-3 mb-3">
+        <div class="row g-2">
+            <div class="col-md-4"><input id="qKw" class="form-control" placeholder="项目名称 / 导师姓名"></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100" onclick="load(1)">查询</button></div>
+        </div>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>项目名称</th><th>导师</th><th>项目说明</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1;
+
+function load(p) {
+    curPage = p || 1;
+    api('/student/api/projects', 'GET', {page: curPage, size: SIZE, kw: $('#qKw').val()}, function (d) {
+        var html = '';
+        d.records.forEach(function (p) {
+            html += '<tr>'
+                + '<td>' + esc(p.title) + '</td>'
+                + '<td>' + esc(p.mentorName || '-') + '</td>'
+                + '<td class="small">' + esc(p.description || '-') + '</td>'
+                + '<td><a class="btn btn-sm btn-outline-primary" href="/student/mentors" title="前往选择导师页面提交申请">申请</a></td>'
+                + '</tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="4" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+load(1);
+</script>
+</body>
+</html>

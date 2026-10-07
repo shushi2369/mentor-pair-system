@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('双选时间设置 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5" style="max-width: 640px;">
+    <h5 class="mb-3">双选时间设置</h5>
+    <div class="card p-4">
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" id="enabledChk">
+            <label class="form-check-label fw-bold" for="enabledChk">启用双选时间窗</label>
+            <div class="form-text">启用后，学员仅可在时间段内提交双选申请（导师处理不受限制）；关闭则不限制。默认关闭。</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">开始时间</label>
+            <input type="datetime-local" class="form-control" id="startTime">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">截止时间</label>
+            <input type="datetime-local" class="form-control" id="endTime">
+        </div>
+        <div id="winTip" class="alert py-2 d-none"></div>
+        <button class="btn btn-primary" onclick="saveWindow()">保存设置</button>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+function load() {
+    api('/admin/api/window', 'GET', {}, function (w) {
+        $('#enabledChk').prop('checked', w.enabled === 1);
+        $('#startTime').val((w.startTime || '').replace(' ', 'T'));
+        $('#endTime').val((w.endTime || '').replace(' ', 'T'));
+        if (w.message) {
+            $('#winTip').removeClass('d-none alert-info alert-danger')
+                .addClass(w.open ? 'alert-info' : 'alert-danger').text('当前状态：' + w.message);
+        } else {
+            $('#winTip').addClass('d-none');
+        }
+    });
+}
+
+function saveWindow() {
+    api('/admin/api/window', 'POST', {
+        enabled: $('#enabledChk').prop('checked') ? 1 : 0,
+        startTime: $('#startTime').val(),
+        endTime: $('#endTime').val()
+    }, function () {
+        alert('时间窗设置已保存');
+        load();
+    });
+}
+
+load();
+</script>
+</body>
+</html>

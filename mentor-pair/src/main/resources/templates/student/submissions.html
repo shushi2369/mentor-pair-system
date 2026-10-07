@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('我的提交 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">提交已完成的项目文件</h5>
+    <div class="card p-3 mb-3">
+        <div id="uploadTip" class="alert alert-warning py-2 mb-0 d-none">双选申请被导师接受后，才能上传项目文件。</div>
+        <div id="uploadBox">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">双选记录</label>
+                    <select id="selId" class="form-select"></select>
+                </div>
+                <div class="col-md-5"><label class="form-label">提交标题</label><input id="subTitle" class="form-control" placeholder="如：毕业设计最终成果"></div>
+                <div class="col-md-3"><label class="form-label">文件（rar/zip/doc/docx/pdf/ppt/pptx，≤20MB）</label><input id="subFile" class="form-control" type="file"></div>
+                <div class="col-12"><label class="form-label">补充说明</label><textarea id="subDesc" class="form-control" rows="2"></textarea></div>
+            </div>
+            <button class="btn btn-primary mt-3" onclick="upload()">上传提交</button>
+        </div>
+    </div>
+    <h5 class="mb-3">提交记录</h5>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>标题</th><th>说明</th><th>文件</th><th>大小</th><th>提交时间</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1;
+
+function loadAccepted() {
+    api('/student/api/selections', 'GET', {status: 1, size: 100}, function (d) {
+        if (!d.records.length) {
+            $('#uploadTip').removeClass('d-none');
+            $('#uploadBox').addClass('d-none');
+            return;
+        }
+        var html = '';
+        d.records.forEach(function (s) {
+            html += '<option value="' + s.id + '">' + esc(s.mentorName || '导师') + ' · ' + esc(s.projectTitle || '未指定项目') + '（' + s.applyTime + ' 申请）</option>';
+        });
+        $('#selId').html(html);
+    });
+}
+
+function upload() {
+    var f = document.getElementById('subFile').files[0];
+    if (!f) { alert('请选择要上传的文件'); return; }
+    if (!$('#selId').val()) { alert('暂无可用的双选记录'); return; }
+    if (!confirm('确认提交 ' + f.name + '？')) return;
+    var fd = new FormData();
+    fd.append('selectionId', $('#selId').val());
+    fd.append('title', $('#subTitle').val());
+    fd.append('description', $('#subDesc').val());
+    fd.append('file', f);
+    api('/student/api/submissions', 'POST', fd, function () {
+        alert('提交成功');
+        $('#subTitle').val('');
+        $('#subDesc').val('');
+        $('#subFile').val('');
+        load(1);
+    });
+}
+
+function load(p) {
+    curPage = p || 1;
+    api('/student/api/submissions', 'GET', {page: curPage, size: SIZE}, function (d) {
+        var html = '';
+        d.records.forEach(function (s) {
+            html += '<tr>'
+                + '<td>' + esc(s.title) + '</td>'
+                + '<td>' + esc(s.description || '-') + '</td>'
+                + '<td>' + esc(s.fileName) + '</td>'
+                + '<td>' + fmtSize(s.fileSize) + '</td>'
+                + '<td>' + (s.submitTime || '-') + '</td>'
+                + '<td><a class="btn btn-sm btn-outline-primary" href="/api/files/' + s.id + '">下载</a></td>'
+                + '</tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="6" class="text-center text-secondary py-4">暂无提交记录</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+loadAccepted();
+load(1);
+</script>
+</body>
+</html>

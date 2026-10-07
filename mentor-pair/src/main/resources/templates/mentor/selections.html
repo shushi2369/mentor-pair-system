@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('双选申请 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">导师选择信息（学员提交的双选申请）</h5>
+        <button class="btn btn-success btn-sm" onclick="location.href='/mentor/api/selections/export'">导出已接收名单</button>
+    </div>
+    <div class="card p-3 mb-3">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <select id="qStatus" class="form-select" onchange="load(1)">
+                    <option value="">全部状态</option>
+                    <option value="0">待处理</option>
+                    <option value="1">已接受</option>
+                    <option value="2">已拒绝</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>学员</th><th>学号</th><th>意向项目</th><th>申请时间</th><th>状态</th><th>回复</th><th>处理时间</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="gradeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="gradeTitle">申请学员成绩</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead><tr><th>课程</th><th>学号</th><th>姓名</th><th>成绩</th></tr></thead>
+                    <tbody id="gradeTb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1, rows = [];
+
+function load(p) {
+    curPage = p || 1;
+    api('/mentor/api/selections', 'GET', {page: curPage, size: SIZE, status: $('#qStatus').val()}, function (d) {
+        rows = d.records;
+        var html = '';
+        rows.forEach(function (s) {
+            var ops = '';
+            if (s.status === 0) {
+                ops = '<button class="btn btn-sm btn-outline-success me-1" onclick="accept(' + s.id + ')">接受</button>'
+                    + '<button class="btn btn-sm btn-outline-danger me-1" onclick="reject(' + s.id + ')">拒绝</button>';
+            }
+            ops += '<button class="btn btn-sm btn-outline-primary" onclick="showGrades(' + s.id + ')">查看成绩</button>';
+            html += '<tr>'
+                + '<td>' + esc(s.studentName || '-') + '</td>'
+                + '<td>' + esc(s.studentNo || '-') + '</td>'
+                + '<td>' + esc(s.projectTitle || '未指定项目') + '</td>'
+                + '<td>' + (s.applyTime || '-') + '</td>'
+                + '<td>' + selStatus(s.status) + '</td>'
+                + '<td>' + esc(s.remark || '-') + '</td>'
+                + '<td>' + (s.handleTime || '-') + '</td>'
+                + '<td>' + ops + '</td></tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="8" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+function accept(id) {
+    if (!confirm('确认接受该学员的申请？名额不足将无法接受。')) return;
+    api('/mentor/api/selections/' + id + '/accept', 'POST', {}, function () { load(curPage); });
+}
+
+function reject(id) {
+    var remark = prompt('请输入拒绝原因（可留空）：');
+    if (remark === null) return;
+    api('/mentor/api/selections/' + id + '/reject', 'POST', {remark: remark}, function () { load(curPage); });
+}
+
+function showGrades(id) {
+    var s = rows.filter(function (r) { return r.id === id; })[0] || {};
+    $('#gradeTitle').text('申请学员成绩：' + (s.studentName || ''));
+    $('#gradeTb').html('<tr><td colspan="4" class="text-secondary">加载中…</td></tr>');
+    new bootstrap.Modal(document.getElementById('gradeModal')).show();
+    api('/mentor/api/selections/' + id + '/grades', 'GET', {}, function (list) {
+        if (!list.length) {
+            $('#gradeTb').html('<tr><td colspan="4" class="text-center text-secondary py-3">暂无成绩记录</td></tr>');
+            return;
+        }
+        var html = '';
+        list.forEach(function (g) {
+            html += '<tr><td>' + esc(g.courseName) + '</td><td>' + esc(g.studentNo) + '</td><td>' + esc(g.studentName || '-') + '</td><td>' + g.score + '</td></tr>';
+        });
+        $('#gradeTb').html(html);
+    });
+}
+
+load(1);
+</script>
+</body>
+</html>

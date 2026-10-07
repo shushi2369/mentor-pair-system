@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('登录 - 师生导师双选系统')"></head>
+<body class="mp-login">
+<div class="mp-login-wrap">
+    <!-- 左侧品牌区 -->
+    <div class="mp-brand d-none d-md-flex">
+        <h1>师生导师双选<br>信息管理系统</h1>
+        <div class="mp-sub">双选申请 · 项目提交 · 指导反馈 · 一站式完成</div>
+        <div class="mp-feature">
+            <div class="mp-ic">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+            </div>
+            <div><b>双向选择</b><span>学员在线选择导师与意向项目，导师按名额接受申请，先到先得</span></div>
+        </div>
+        <div class="mp-feature">
+            <div class="mp-ic">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </div>
+            <div><b>项目提交</b><span>双选成功后上传项目成果文件，支持多种格式与进度管理</span></div>
+        </div>
+        <div class="mp-feature">
+            <div class="mp-ic">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+            </div>
+            <div><b>指导反馈</b><span>导师针对提交内容给出指导意见，学员随时查看修改</span></div>
+        </div>
+    </div>
+    <!-- 右侧登录卡片 -->
+    <div class="mp-login-card">
+        <h4>欢迎登录</h4>
+        <div class="mp-tip">请选择登录端，并输入对应账号</div>
+        <div class="mp-role-row">
+            <div class="mp-role" data-role="1">
+                <div class="mp-ic mp-ic-admin">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm0 10.9h6c-.5 3.4-2.7 6.4-6 7.9V13H6V6.3l6-2.2v8.8z"/></svg>
+                </div>
+                <b>管理员</b><small>账号与数据管理</small>
+            </div>
+            <div class="mp-role" data-role="2">
+                <div class="mp-ic mp-ic-mentor">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 5c-1.1-.7-2.5-1-4-1-1.6 0-3.2.4-4.5 1.2C11.2 4.4 9.6 4 8 4 6.5 4 5.1 4.3 4 5c-.6.4-1 1-1 1.7v11c0 .8.9 1.3 1.6.9 1.1-.5 2.2-.6 3.4-.6 1.6 0 3.2.4 4.5 1.2V6.2C13.8 5.4 15.4 5 17 5v13c1 0 2 .2 2.9.7.7.4 1.6-.1 1.6-.9v-11c0-.7-.4-1.3-1-1.8z"/></svg>
+                </div>
+                <b>导师</b><small>发布项目 · 接收学员</small>
+            </div>
+            <div class="mp-role" data-role="3">
+                <div class="mp-ic mp-ic-student">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3 1 9l11 6 9-4.9V17h2V9L12 3zM5 13.2V17c0 1.7 3.1 3 7 3s7-1.3 7-3v-3.8l-7 3.8-7-3.8z"/></svg>
+                </div>
+                <b>学员</b><small>选择导师 · 提交项目</small>
+            </div>
+        </div>
+        <div class="alert alert-danger py-2" th:if="${error}" th:text="${error}"></div>
+        <form method="post" th:action="@{/login}">
+            <input type="hidden" name="role" id="roleInput" th:value="${selectedRole} ?: 3">
+            <div class="mb-3">
+                <label class="form-label">账号</label>
+                <input class="form-control form-control-lg" id="username" name="username"
+                       th:value="${username}" placeholder="请输入学号" autocomplete="off" required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">密码</label>
+                <input class="form-control form-control-lg" id="password" type="password" name="password" placeholder="请输入密码" required>
+            </div>
+            <button class="btn w-100 text-white mp-btn-student" id="loginBtn" type="submit">登录学员端</button>
+        </form>
+        <div class="text-center text-secondary mt-3" style="font-size:.82rem;">
+            忘记密码请联系管理员重置 · 默认密码 123456
+        </div>
+    </div>
+</div>
+<script>
+var ROLES = {
+    1: {ph: "请输入管理员账号", btn: "登录管理员端"},
+    2: {ph: "请输入导师工号", btn: "登录导师端"},
+    3: {ph: "请输入学号", btn: "登录学员端"}
+};
+var BTN_COLOR = {1: "admin", 2: "mentor", 3: "student"};
+function selectRole(r) {
+    document.getElementById("roleInput").value = r;
+    try { localStorage.setItem("mp_role", r); } catch (e) {}
+    document.querySelectorAll(".mp-role").forEach(function (el) {
+        el.classList.toggle("active", el.dataset.role === String(r));
+    });
+    document.getElementById("username").placeholder = ROLES[r].ph;
+    var b = document.getElementById("loginBtn");
+    b.className = "btn w-100 text-white mp-btn-" + BTN_COLOR[r];
+    b.textContent = ROLES[r].btn;
+}
+document.querySelectorAll(".mp-role").forEach(function (el) {
+    el.addEventListener("click", function () { selectRole(el.dataset.role); });
+});
+var savedRole = "3";
+try { savedRole = localStorage.getItem("mp_role") || "3"; } catch (e) {}
+selectRole(document.getElementById("roleInput").value || savedRole);
+</script>
+</body>
+</html>

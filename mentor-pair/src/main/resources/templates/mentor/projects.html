@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('我的项目 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">我的项目</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal" onclick="prepareAdd()">发布项目</button>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>ID</th><th>项目名称</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="mTitle">发布项目</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">项目名称</label><input id="fTitle" class="form-control" maxlength="100"></div>
+                <div class="mb-3"><label class="form-label">项目说明与任务要求</label><textarea id="fDesc" class="form-control" rows="5"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitForm()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1, rows = [], editId = null;
+
+function load(p) {
+    curPage = p || 1;
+    api('/mentor/api/projects', 'GET', {page: curPage, size: SIZE}, function (d) {
+        rows = d.records;
+        var html = '';
+        rows.forEach(function (p) {
+            html += '<tr>'
+                + '<td>' + p.id + '</td>'
+                + '<td>' + esc(p.title) + '<div class="text-secondary small">' + esc(p.description || '') + '</div></td>'
+                + '<td>' + (p.status === 1 ? '<span class="badge bg-success">开放</span>' : '<span class="badge bg-secondary">下架</span>') + '</td>'
+                + '<td>' + (p.createTime || '-') + '</td>'
+                + '<td>'
+                + '<button class="btn btn-sm btn-outline-primary me-1" onclick="openEdit(' + p.id + ')">编辑</button>'
+                + (p.status === 1 ? '<button class="btn btn-sm btn-outline-warning" onclick="offline(' + p.id + ')">下架</button>' : '')
+                + '</td></tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="5" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+function prepareAdd() {
+    editId = null;
+    $('#mTitle').text('发布项目');
+    $('#fTitle').val('');
+    $('#fDesc').val('');
+}
+
+function openEdit(id) {
+    var p = rows.filter(function (r) { return r.id === id; })[0];
+    if (!p) return;
+    editId = id;
+    $('#mTitle').text('编辑项目');
+    $('#fTitle').val(p.title);
+    $('#fDesc').val(p.description || '');
+    new bootstrap.Modal(document.getElementById('modal')).show();
+}
+
+function submitForm() {
+    var data = {title: $('#fTitle').val(), description: $('#fDesc').val()};
+    if (editId == null) {
+        api('/mentor/api/projects', 'POST', data, done);
+    } else {
+        api('/mentor/api/projects/' + editId + '/update', 'POST', data, done);
+    }
+    function done() {
+        bootstrap.Modal.getInstance(document.getElementById('modal')).hide();
+        load(curPage);
+    }
+}
+
+function offline(id) {
+    if (!confirm('确认下架该项目？下架后学员不可再选择。')) return;
+    api('/mentor/api/projects/' + id + '/offline', 'POST', {}, function () { load(curPage); });
+}
+
+load(1);
+</script>
+</body>
+</html>

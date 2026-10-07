@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('我的指导 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">导师指导信息</h5>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>提交标题</th><th>指导内容</th><th>导师</th><th>指导时间</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1;
+
+function load(p) {
+    curPage = p || 1;
+    api('/student/api/guidances', 'GET', {page: curPage, size: SIZE}, function (d) {
+        var html = '';
+        d.records.forEach(function (g) {
+            html += '<tr>'
+                + '<td>' + esc(g.submissionTitle || '-') + '</td>'
+                + '<td>' + esc(g.content) + '</td>'
+                + '<td>' + esc(g.mentorName || '-') + '</td>'
+                + '<td>' + (g.guidanceTime || '-') + '</td>'
+                + '</tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="4" class="text-center text-secondary py-4">暂无指导记录</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+load(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('数据总览 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">数据总览</h5>
+    <div class="row g-3 mb-4" id="statCards"></div>
+    <div class="card p-3">
+        <h6 class="fw-bold mb-2">最近双选申请</h6>
+        <table class="table table-hover mb-2">
+            <thead><tr><th>学员</th><th>学号</th><th>导师</th><th>意向项目</th><th>申请时间</th><th>状态</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var STAT_META = [
+    {k: "mentors",          label: "在岗导师",     color: "#4f46e5", bg: "#eef2ff"},
+    {k: "students",         label: "在读学员",     color: "#0284c7", bg: "#e0f2fe"},
+    {k: "openProjects",     label: "开放项目",     color: "#059669", bg: "#ecfdf5"},
+    {k: "pendingSelections",label: "待处理申请",   color: "#d97706", bg: "#fffbeb"},
+    {k: "acceptedSelections",label: "已接收配对",  color: "#16a34a", bg: "#f0fdf4"},
+    {k: "submissions",      label: "项目提交",     color: "#7c3aed", bg: "#f5f3ff"},
+    {k: "guidances",        label: "指导记录",     color: "#db2777", bg: "#fdf2f8"},
+    {k: "courses",          label: "导入课程",     color: "#64748b", bg: "#f8fafc"}
+];
+
+api("/admin/api/stats", "GET", {}, function (d) {
+    var html = "";
+    STAT_META.forEach(function (s) {
+        var v = d[s.k] == null ? 0 : d[s.k];
+        html += '<div class="col-md-3 col-6">'
+            + '<div class="card p-3 d-flex align-items-center flex-row" style="gap:.9rem;">'
+            + '<div style="width:46px;height:46px;border-radius:12px;background:' + s.bg + ';color:' + s.color
+            + ';display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;">'
+            + v + '</div>'
+            + '<div><div style="font-weight:700;color:#0f172a;">' + s.label + '</div>'
+            + '<div class="text-secondary" style="font-size:.8rem;">实时统计</div></div>'
+            + '</div></div>';
+    });
+    $("#statCards").html(html);
+});
+
+api("/admin/api/window", "GET", {}, function (w) {
+    var text = !w.enabled ? "不限时间" : (w.open ? (w.message || "双选进行中") : w.message);
+    var color = !w.enabled ? "bg-secondary" : (w.open ? "bg-success" : "bg-danger");
+    $("#statCards").append(
+        '<div class="col-md-3 col-6"><div class="card p-3" role="button" style="cursor:pointer;" '
+        + 'onclick="location.href=\'/admin/window\'" title="点击前往设置">'
+        + '<span class="badge ' + color + ' mb-2" style="width:fit-content;">' + esc(text) + '</span>'
+        + '<div style="font-weight:700;color:#0f172a;">双选状态</div>'
+        + '<div class="text-secondary" style="font-size:.8rem;">点击前往设置</div>'
+        + '</div></div>');
+});
+
+api("/admin/api/recent", "GET", {}, function (d) {
+    var html = "";
+    d.records.forEach(function (s) {
+        html += '<tr>'
+            + '<td>' + esc(s.studentName || '-') + '</td>'
+            + '<td>' + esc(s.studentNo || '-') + '</td>'
+            + '<td>' + esc(s.mentorName || '-') + '</td>'
+            + '<td>' + esc(s.projectTitle || '未指定项目') + '</td>'
+            + '<td>' + (s.applyTime || '-') + '</td>'
+            + '<td>' + selStatus(s.status) + '</td>'
+            + '</tr>';
+    });
+    $('#tb').html(html || '<tr><td colspan="6" class="text-center text-secondary py-4">暂无申请记录</td></tr>');
+});
+</script>
+</body>
+</html>

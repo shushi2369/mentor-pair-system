@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('我的申请 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">我的双选申请</h5>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>导师</th><th>意向项目</th><th>申请时间</th><th>状态</th><th>导师回复</th><th>处理时间</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+        <div class="text-secondary small mt-2">提示：申请被拒绝后，可前往“选择导师”页面重新提交申请。</div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1;
+
+function load(p) {
+    curPage = p || 1;
+    api('/student/api/selections', 'GET', {page: curPage, size: SIZE}, function (d) {
+        var html = '';
+        d.records.forEach(function (s) {
+            html += '<tr>'
+                + '<td>' + esc(s.mentorName || '-') + '</td>'
+                + '<td>' + esc(s.projectTitle || '未指定项目') + '</td>'
+                + '<td>' + (s.applyTime || '-') + '</td>'
+                + '<td>' + selStatus(s.status) + '</td>'
+                + '<td>' + esc(s.remark || '-') + '</td>'
+                + '<td>' + (s.handleTime || '-') + '</td>'
+                + '</tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="6" class="text-center text-secondary py-4">暂无申请记录</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+load(1);
+</script>
+</body>
+</html>

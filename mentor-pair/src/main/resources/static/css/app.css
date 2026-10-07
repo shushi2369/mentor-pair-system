@@ -1,0 +1,190 @@
+/* ==========================================================
+   师生导师双选系统 · 全局主题（本地资源，无外网依赖）
+   ========================================================== */
+:root {
+    --mp-admin: #4f46e5;
+    --mp-admin-dark: #3730a3;
+    --mp-mentor: #059669;
+    --mp-mentor-dark: #047857;
+    --mp-student: #ea580c;
+    --mp-student-dark: #c2410c;
+    --mp-ink: #0f172a;
+}
+
+body {
+    background: #eef2f7;
+    font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+    color: #1e293b;
+}
+
+/* ---------- 卡片与页面骨架 ---------- */
+.card {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, .07);
+}
+
+.container > h5, .card h5 { font-weight: 700; color: var(--mp-ink); }
+
+.table { margin-bottom: 0; }
+.table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    border-bottom-width: 1px;
+    white-space: nowrap;
+}
+.table td { color: #334155; vertical-align: middle; }
+.table-hover tbody tr:hover { background: #f1f5ff; }
+
+.badge { font-weight: 500; border-radius: 6px; }
+#pg { padding: .4rem .25rem 0; }
+.form-control, .form-select { border-radius: 8px; }
+.btn { border-radius: 8px; }
+.modal-content { border: 0; border-radius: 14px; }
+.modal-header { border-bottom: 1px solid #f1f5f9; }
+
+/* ---------- 导航栏（按角色变色） ---------- */
+.mp-navbar {
+    padding: .55rem 0;
+    box-shadow: 0 2px 12px rgba(2, 6, 23, .28);
+}
+.mp-navbar .navbar-brand {
+    font-weight: 800;
+    letter-spacing: .5px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+}
+.mp-navbar .nav-link {
+    color: rgba(255, 255, 255, .78);
+    border-radius: 8px;
+    padding: .35rem .8rem !important;
+    font-size: .95rem;
+}
+.mp-navbar .nav-link:hover { color: #fff; background: rgba(255, 255, 255, .14); }
+.mp-navbar-admin   { background: linear-gradient(90deg, #312e81, #4f46e5 55%, #6366f1); }
+.mp-navbar-mentor  { background: linear-gradient(90deg, #064e3b, #059669 55%, #10b981); }
+.mp-navbar-student { background: linear-gradient(90deg, #9a3412, #ea580c 55%, #f97316); }
+.mp-role-badge {
+    background: rgba(255, 255, 255, .16);
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 999px;
+    padding: .12rem .7rem;
+    font-size: .78rem;
+    color: #fff;
+    white-space: nowrap;
+}
+
+/* ---------- 登录页 / 403 页 ---------- */
+body.mp-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4f46e5 75%, #7c3aed 100%);
+    position: relative;
+    overflow: hidden;
+    padding: 24px 0;
+}
+body.mp-login::before,
+body.mp-login::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .35;
+    pointer-events: none;
+}
+body.mp-login::before { width: 440px; height: 440px; background: #818cf8; top: -130px; right: -90px; }
+body.mp-login::after  { width: 380px; height: 380px; background: #c084fc; bottom: -130px; left: -70px; }
+
+.mp-login-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    width: min(960px, 94vw);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(2, 6, 23, .45);
+}
+
+.mp-brand {
+    flex: 1.05;
+    background: linear-gradient(160deg, rgba(15, 23, 42, .60), rgba(15, 23, 42, .28));
+    color: #fff;
+    padding: 46px 42px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.mp-brand h1 { font-size: 1.6rem; font-weight: 800; line-height: 1.45; margin-bottom: .4rem; }
+.mp-brand .mp-sub { color: #c7d2fe; margin-bottom: 2rem; font-size: .95rem; }
+.mp-feature { display: flex; gap: .9rem; align-items: flex-start; margin-bottom: 1.15rem; }
+.mp-feature .mp-ic {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255, 255, 255, .15);
+    display: flex; align-items: center; justify-content: center;
+    flex: none;
+}
+.mp-feature b { display: block; font-size: .98rem; margin-bottom: .1rem; }
+.mp-feature span { color: #c7d2fe; font-size: .85rem; line-height: 1.5; display: block; }
+
+.mp-login-card { flex: 1; background: #fff; padding: 38px 38px 32px; }
+.mp-login-card h4 { font-weight: 800; color: var(--mp-ink); margin-bottom: .2rem; }
+.mp-login-card .mp-tip { color: #94a3b8; font-size: .85rem; }
+
+.mp-role-row { display: flex; gap: 12px; margin: 1.05rem 0 1.25rem; }
+.mp-role {
+    flex: 1;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: .7rem .4rem .6rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    user-select: none;
+    background: #fff;
+}
+.mp-role .mp-ic {
+    width: 38px; height: 38px;
+    margin: 0 auto .3rem;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+}
+.mp-role b { font-size: .92rem; color: #334155; display: block; }
+.mp-role small { color: #94a3b8; font-size: .74rem; }
+.mp-role:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15, 23, 42, .08); }
+.mp-role.active { box-shadow: 0 8px 18px rgba(79, 70, 229, .16); }
+.mp-role.active[data-role="1"] { border-color: var(--mp-admin); background: #eef2ff; }
+.mp-role.active[data-role="1"] b { color: var(--mp-admin-dark); }
+.mp-role.active[data-role="2"] { border-color: var(--mp-mentor); background: #ecfdf5; }
+.mp-role.active[data-role="2"] b { color: var(--mp-mentor-dark); }
+.mp-role.active[data-role="3"] { border-color: var(--mp-student); background: #fff7ed; }
+.mp-role.active[data-role="3"] b { color: var(--mp-student-dark); }
+
+.mp-ic-admin   { background: #eef2ff; color: var(--mp-admin); }
+.mp-ic-mentor  { background: #ecfdf5; color: var(--mp-mentor); }
+.mp-ic-student { background: #fff7ed; color: var(--mp-student); }
+
+#loginBtn { font-weight: 600; letter-spacing: 2px; padding: .6rem; }
+#loginBtn.mp-btn-admin   { background: var(--mp-admin); border-color: var(--mp-admin); }
+#loginBtn.mp-btn-admin:hover   { background: var(--mp-admin-dark); }
+#loginBtn.mp-btn-mentor  { background: var(--mp-mentor); border-color: var(--mp-mentor); }
+#loginBtn.mp-btn-mentor:hover  { background: var(--mp-mentor-dark); }
+#loginBtn.mp-btn-student { background: var(--mp-student); border-color: var(--mp-student); }
+#loginBtn.mp-btn-student:hover { background: var(--mp-student-dark); }
+
+.mp-403-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 56px 64px;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(2, 6, 23, .45);
+}
+
+@media (max-width: 860px) {
+    .mp-brand { display: none; }
+    .mp-login-wrap { width: min(460px, 94vw); }
+}

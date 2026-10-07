@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head('成绩单导入 - 师生导师双选系统')"></head>
+<body>
+<nav th:replace="fragments/nav :: nav"></nav>
+<div class="container pb-5">
+    <h5 class="mb-3">成绩单导入（Excel）</h5>
+    <div class="card p-3 mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">课程名称</label>
+                <input id="courseName" class="form-control" placeholder="如：Java 程序设计">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">成绩单文件（.xls / .xlsx）</label>
+                <input id="file" class="form-control" type="file" accept=".xls,.xlsx">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" onclick="importCourse()">导入成绩</button>
+            </div>
+        </div>
+        <div class="form-text mt-2">表头固定为：学号、姓名、成绩；成绩为 0-100 数值；异常行自动跳过并在结果中提示。</div>
+        <div id="importMsg" class="alert alert-info py-2 mt-3 d-none"></div>
+    </div>
+    <div class="card p-3">
+        <table class="table table-hover mb-2">
+            <thead><tr><th>ID</th><th>课程名称</th><th>成绩条数</th><th>导入时间</th><th>操作</th></tr></thead>
+            <tbody id="tb"></tbody>
+        </table>
+        <div id="pg" class="d-flex align-items-center"></div>
+    </div>
+</div>
+
+<div class="modal fade" id="gradeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="gradeTitle">课程成绩</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead><tr><th>学号</th><th>姓名</th><th>成绩</th></tr></thead>
+                    <tbody id="gradeTb"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/scripts :: scripts"></div>
+<script>
+var SIZE = 10, curPage = 1, rows = [];
+
+function load(p) {
+    curPage = p || 1;
+    api('/mentor/api/courses', 'GET', {page: curPage, size: SIZE}, function (d) {
+        rows = d.records;
+        var html = '';
+        rows.forEach(function (c) {
+            html += '<tr>'
+                + '<td>' + c.id + '</td>'
+                + '<td>' + esc(c.courseName) + '</td>'
+                + '<td>' + c.gradeCount + '</td>'
+                + '<td>' + (c.createTime || '-') + '</td>'
+                + '<td>'
+                + '<button class="btn btn-sm btn-outline-primary me-1" onclick="showGrades(' + c.id + ')">查看成绩</button>'
+                + '<button class="btn btn-sm btn-outline-danger" onclick="del(' + c.id + ')">删除</button>'
+                + '</td></tr>';
+        });
+        $('#tb').html(html || '<tr><td colspan="5" class="text-center text-secondary py-4">暂无数据</td></tr>');
+        pager('#pg', curPage, d.total, SIZE, load);
+    });
+}
+
+function importCourse() {
+    var name = $('#courseName').val();
+    var f = document.getElementById('file').files[0];
+    if (!name.trim()) { alert('请填写课程名称'); return; }
+    if (!f) { alert('请选择 Excel 文件'); return; }
+    var fd = new FormData();
+    fd.append('courseName', name);
+    fd.append('file', f);
+    api('/mentor/api/courses', 'POST', fd, function (data, msg) {
+        var box = $('#importMsg').removeClass('d-none alert-danger alert-info');
+        if (msg && msg.indexOf('失败 0 条') < 0) box.addClass('alert-danger'); else box.addClass('alert-info');
+        box.text(msg);
+        load(1);
+    });
+}
+
+function showGrades(id) {
+    var c = rows.filter(function (r) { return r.id === id; })[0] || {};
+    $('#gradeTitle').text('课程成绩：' + (c.courseName || ''));
+    $('#gradeTb').html('<tr><td colspan="3" class="text-secondary">加载中…</td></tr>');
+    new bootstrap.Modal(document.getElementById('gradeModal')).show();
+    api('/mentor/api/courses/' + id + '/grades', 'GET', {}, function (list) {
+        if (!list.length) {
+            $('#gradeTb').html('<tr><td colspan="3" class="text-center text-secondary py-3">暂无成绩记录</td></tr>');
+            return;
+        }
+        var html = '';
+        list.forEach(function (g) {
+            html += '<tr><td>' + esc(g.studentNo) + '</td><td>' + esc(g.studentName || '-') + '</td><td>' + g.score + '</td></tr>';
+        });
+        $('#gradeTb').html(html);
+    });
+}
+
+function del(id) {
+    if (!confirm('确认删除该课程及其全部成绩？')) return;
+    api('/mentor/api/courses/' + id, 'DELETE', {}, function () { load(curPage); });
+}
+
+load(1);
+</script>
+</body>
+</html>
